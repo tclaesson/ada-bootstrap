@@ -1,4 +1,4 @@
-(define-module (tbc packages ada-binary)
+(define-module (tbc packages ada)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix build-system copy)
   #:use-module (guix profiles)
