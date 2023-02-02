@@ -1,4 +1,4 @@
-(define-module (torb packages ada-binary)
+(define-module (tbc packages ada-binary)
   #:use-module ((guix licenses) #:prefix license:)
   #:use-module (guix build-system copy)
   #:use-module (guix profiles)
