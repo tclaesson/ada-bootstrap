@@ -149,11 +149,12 @@
 						 (not (string-suffix? ".so" file))))
 					  #:directories? #f))))
 				  
-				  (append (find-binaries "x86_64-pc-linux-gnu/bin/")
-					  (find-binaries "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/")
-					  (find-binaries "bin/"))))))
+				  (append
+				   (find-binaries "x86_64-pc-linux-gnu/bin/")
+				   (find-binaries "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/")
+				   (find-binaries "bin/"))))))
 		  
- (add-after 'patchelf-set-interpreter 'patchelf-set-rpath
+		  (add-after 'patchelf-set-interpreter 'patchelf-set-rpath
 		    (lambda* (#:key inputs outputs #:allow-other-keys)
 		      (for-each (lambda (binary)
 				  (invoke "patchelf"
@@ -163,66 +164,27 @@
 					   (assoc-ref inputs "glibc") "/lib:"
 					   (assoc-ref inputs "expat") "/lib:"
 					   (assoc-ref inputs "xz") "/lib")
-					  (string-append
-					   (assoc-ref outputs "out")
-					   "/"
-					   binary))
+					  binary)
 				  (invoke "patchelf"
 					  "--shrink-rpath"
-					  (string-append
-					   (assoc-ref outputs "out")
-					   "/"
-					   binary)))
-				(list
-
-				 "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/cc1"
-				 "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/cc1plus"
-				 "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/collect2"
-				 "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/g++-mapper-server"
-				 "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/gnat1"
-				 "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/lto-wrapper"
-				 "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/lto1"
-				 "bin/as"
-				 "bin/c++"
-				 "bin/cpp"
-				 "bin/g++"
-				 "bin/gcc"
-				 "bin/gcov"
-				 "bin/gcov-dump"
-				 "bin/gcov-tool"
-				 "bin/gnat"
-				 "bin/gnatbind"
-				 "bin/gnatchop"
-				 "bin/gnatclean"
-				 "bin/gnatkr"
-				 "bin/gnatlink"
-				 "bin/gnatls"
-				 "bin/gnatmake"
-				 "bin/gnatname"
-				 "bin/gnatprep"
-				 "bin/gp-archive"
-				 "bin/gp-collect-app"
-				 "bin/gp-display-src"
-				 "bin/gp-display-text"
-				 "bin/gprofng"
-				 "bin/lto-dump"
-				 "bin/x86_64-pc-linux-gnu-c++"
-				 "bin/x86_64-pc-linux-gnu-g++"
-				 "bin/x86_64-pc-linux-gnu-gcc"
-				 "x86_64-pc-linux-gnu/bin/as"
-				 "bin/x86_64-pc-linux-gnu-gcc-12.2.0"
-				 "lib/gcc/x86_64-pc-linux-gnu/12.2.0/adalib/libgnarl-12.so"
-				 "lib/gcc/x86_64-pc-linux-gnu/12.2.0/plugin/libcp1plugin.so"
-				 "lib/gcc/x86_64-pc-linux-gnu/12.2.0/plugin/libcc1plugin.so"
-				 "lib64/libasan.so"
-				 "lib64/libcc1.so"
-				 "lib64/libtsan.so"
-				 "lib64/libubsan.so"
-				 "lib64/liblsan.so"
-				 "lib64/libstdc++.so"
-				 "lib/gcc/x86_64-pc-linux-gnu/12.2.0/adalib/libgnat-12.so" ))))
-		  
-		  )))
+					  binary))
+				(let* ((out (assoc-ref outputs "out"))
+				       (find-executables
+					(lambda (path)
+					  (find-files
+					   (string-append (assoc-ref outputs "out")
+							  "/"
+							  path)
+					   (lambda (file stat)
+					     (and (elf-file? file)
+						  (not (string-suffix? ".o" file))))))))
+				  (append
+				   (find-executables "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/")
+				   (find-executables "bin/")
+				   (find-executables "x86_64-pc-linux-gnu/bin/")
+				   (find-executables "lib/gcc/x86_64-pc-linux-gnu/12.2.0/plugin/")
+				   (find-executables "lib64/")
+				   (find-executables "lib/gcc/x86_64-pc-linux-gnu/12.2.0/adalib/")))))))))
     
     (inputs
      `(("gcc:lib" ,gcc-12 "lib")
