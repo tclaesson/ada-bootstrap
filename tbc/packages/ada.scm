@@ -184,7 +184,34 @@
 				   (find-executables "x86_64-pc-linux-gnu/bin/")
 				   (find-executables "lib/gcc/x86_64-pc-linux-gnu/12.2.0/plugin/")
 				   (find-executables "lib64/")
-				   (find-executables "lib/gcc/x86_64-pc-linux-gnu/12.2.0/adalib/")))))))))
+				   (find-executables "lib/gcc/x86_64-pc-linux-gnu/12.2.0/adalib/"))))))
+		  
+		  (add-after 'patchelf-set-rpath 'wrap-binaries
+		    (lambda* (#:key inputs outputs #:allow-other-keys)
+		      (let* ((out (assoc-ref outputs "out"))
+			     (bin (string-append out "/bin"))
+			     (interpreter (string-append (assoc-ref inputs "glibc")
+							 "/lib/ld-linux-x86-64.so.2")))
+			(for-each
+			 (lambda (program-name)
+			   (with-directory-excursion bin
+			     (rename-file
+			      program-name
+			      (string-append
+			       "." program-name "-real"))
+			     (call-with-output-file program-name
+			       (lambda (port)
+				 (format port "#!~a/bin/sh
+exec -a \"$0\" ~a/.~a-real -Wl,--dynamic-linker=~a \"$@\""
+					 (assoc-ref inputs "bash")
+					 bin
+					 program-name
+					 interpreter)))
+			     (chmod program-name #o555)))
+			 (list
+			  "gcc"
+			  "g++"
+			  "ld"))))))))
     
     (inputs
      `(("gcc:lib" ,gcc-12 "lib")
