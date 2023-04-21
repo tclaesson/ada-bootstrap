@@ -91,9 +91,9 @@
     (home-page "hepp")
     (license license:gpl3+)))
 
-(define-public gnat-bootstrap
+(define-public gnat-fsf-binary
   (package
-    (name "gnat-bootstrap")
+    (name "gnat-fsf-binary")
     (version "12.2.0-1")
     (supported-systems (list "x86_64-linux"))
     (source (origin
@@ -107,7 +107,9 @@
 	       (base32
 		"16gy4w6frykpq009vk8nw3z6950bivkfjdl29a9d8ywnwh8viwqi"))
 	      (modules '((guix build utils)))
-	      (snippet '(delete-file-recursively "bin/gdb")))) ;; gdb want ncurses-5
+	      (snippet '(for-each delete-file-recursively
+				  '("bin/gdb" ;; gdb want ncurses-5
+				    )))))
 
     (build-system copy-build-system)
     (arguments
@@ -125,6 +127,7 @@
 				 "libexec"
 				 "share"
 				 "x86_64-pc-linux-gnu"))
+       
        #:phases (modify-phases %standard-phases
 		  (add-after 'install 'patchelf-set-interpreter
 		    (lambda* (#:key inputs outputs #:allow-other-keys)
@@ -133,45 +136,24 @@
 					  "--set-interpreter"
 					  (string-append (assoc-ref inputs "glibc")
 							 "/lib/ld-linux-x86-64.so.2")
+					  binary))
+				(let ((find-binaries
+				       (lambda (path)
+					 (find-files
 					  (string-append (assoc-ref outputs "out")
 							 "/"
-							 binary)))
-				(list "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/cc1"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/cc1plus"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/collect2"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/g++-mapper-server"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/gnat1"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/lto-wrapper"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/lto1"
-				      "bin/as"
-				      "bin/c++"
-				      "bin/cpp"
-				      "bin/g++"
-				      "bin/gcc"
-				      "bin/gcov"
-				      "bin/gcov-dump"
-				      "bin/gcov-tool"
-				      "bin/gnat"
-				      "bin/gnatbind"
-				      "bin/gnatchop"
-				      "bin/gnatclean"
-				      "bin/gnatkr"
-				      "bin/gnatlink"
-				      "bin/gnatls"
-				      "bin/gnatmake"
-				      "bin/gnatname"
-				      "bin/gnatprep"
-				      "bin/gp-archive"
-				      "bin/gp-collect-app"
-				      "bin/gp-display-src"
-				      "bin/gp-display-text"
-				      "bin/gprofng"
-				      "bin/lto-dump"
-				      "bin/x86_64-pc-linux-gnu-c++"
-				      "bin/x86_64-pc-linux-gnu-g++"
-				      "bin/x86_64-pc-linux-gnu-gcc"
-				      "x86_64-pc-linux-gnu/bin/as"
-				      "bin/x86_64-pc-linux-gnu-gcc-12.2.0"))))
+							 path)
+					  (lambda (file stat)
+					    (and (executable-file? file)
+						 (elf-file? file)
+						 (not (string-suffix? ".so" file))))
+					  #:directories? #f))))
+				  
+				  (append
+				   (find-binaries "x86_64-pc-linux-gnu/bin/")
+				   (find-binaries "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/")
+				   (find-binaries "bin/"))))))
+		  
 		  (add-after 'patchelf-set-interpreter 'patchelf-set-rpath
 		    (lambda* (#:key inputs outputs #:allow-other-keys)
 		      (for-each (lambda (binary)
@@ -182,71 +164,66 @@
 					   (assoc-ref inputs "glibc") "/lib:"
 					   (assoc-ref inputs "expat") "/lib:"
 					   (assoc-ref inputs "xz") "/lib")
-					  (string-append
-					   (assoc-ref outputs "out")
-					   "/"
-					   binary))
+					  binary)
 				  (invoke "patchelf"
 					  "--shrink-rpath"
-					  (string-append
-					   (assoc-ref outputs "out")
-					   "/"
-					   binary)))
-				(list "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/cc1"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/cc1plus"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/collect2"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/g++-mapper-server"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/gnat1"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/lto-wrapper"
-				      "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/lto1"
-				      "bin/as"
-				      "bin/c++"
-				      "bin/cpp"
-				      "bin/g++"
-				      "bin/gcc"
-				      "bin/gcov"
-				      "bin/gcov-dump"
-				      "bin/gcov-tool"
-				      "bin/gnat"
-				      "bin/gnatbind"
-				      "bin/gnatchop"
-				      "bin/gnatclean"
-				      "bin/gnatkr"
-				      "bin/gnatlink"
-				      "bin/gnatls"
-				      "bin/gnatmake"
-				      "bin/gnatname"
-				      "bin/gnatprep"
-				      "bin/gp-archive"
-				      "bin/gp-collect-app"
-				      "bin/gp-display-src"
-				      "bin/gp-display-text"
-				      "bin/gprofng"
-				      "bin/lto-dump"
-				      "bin/x86_64-pc-linux-gnu-c++"
-				      "bin/x86_64-pc-linux-gnu-g++"
-				      "bin/x86_64-pc-linux-gnu-gcc"
-				      "x86_64-pc-linux-gnu/bin/as"
-				      "bin/x86_64-pc-linux-gnu-gcc-12.2.0"
-				      "lib/gcc/x86_64-pc-linux-gnu/12.2.0/adalib/libgnarl-12.so"
-				      "lib/gcc/x86_64-pc-linux-gnu/12.2.0/plugin/libcp1plugin.so"
-				      "lib/gcc/x86_64-pc-linux-gnu/12.2.0/plugin/libcc1plugin.so"
-				      "lib64/libasan.so"
-				      "lib64/libcc1.so"
-				      "lib64/libtsan.so"
-				      "lib64/libubsan.so"
-				      "lib64/liblsan.so"
-				      "lib64/libstdc++.so"
-				      "lib/gcc/x86_64-pc-linux-gnu/12.2.0/adalib/libgnat-12.so" )))))))
+					  binary))
+				(let* ((out (assoc-ref outputs "out"))
+				       (find-executables
+					(lambda (path)
+					  (find-files
+					   (string-append (assoc-ref outputs "out")
+							  "/"
+							  path)
+					   (lambda (file stat)
+					     (and (elf-file? file)
+						  (not (string-suffix? ".o" file))))))))
+				  (append
+				   (find-executables "libexec/gcc/x86_64-pc-linux-gnu/12.2.0/")
+				   (find-executables "bin/")
+				   (find-executables "x86_64-pc-linux-gnu/bin/")
+				   (find-executables "lib/gcc/x86_64-pc-linux-gnu/12.2.0/plugin/")
+				   (find-executables "lib64/")
+				   (find-executables "lib/gcc/x86_64-pc-linux-gnu/12.2.0/adalib/"))))))
+		  
+		  (add-after 'patchelf-set-rpath 'wrap-binaries
+		    (lambda* (#:key inputs outputs #:allow-other-keys)
+		      (let* ((out (assoc-ref outputs "out"))
+			     (bin (string-append out "/bin"))
+			     (interpreter (string-append (assoc-ref inputs "glibc")
+							 "/lib/ld-linux-x86-64.so.2")))
+			(for-each
+			 (lambda (program-name)
+			   (with-directory-excursion bin
+			     (rename-file
+			      program-name
+			      (string-append
+			       "." program-name "-real"))
+			     (call-with-output-file program-name
+			       (lambda (port)
+				 (format port "#!~a/bin/sh
+exec -a \"$0\" ~a/.~a-real -Wl,--dynamic-linker=~a \"$@\""
+					 (assoc-ref inputs "bash")
+					 bin
+					 program-name
+					 interpreter)))
+			     (chmod program-name #o555)))
+			 (list
+			  "gcc"
+			  "g++"
+			  "ld"))))))))
+    
     (inputs
      `(("gcc:lib" ,gcc-12 "lib")
        ("gcc-toolchain" ,gcc-toolchain)
        ("glibc" ,glibc)
        ("expat" ,expat)
        ("xz" ,xz)))
+    
     (native-inputs (list patchelf))
     
     (synopsis "Builds of the GNAT Ada compiler from FSF GCC releases")
     (description "XXX Do not install this package, install gnat instead. This is for bootstrapping compilation of GNAT")
     (home-page "https://github.com/alire-project/GNAT-FSF-builds")
     (license license:gpl3+)))
+
